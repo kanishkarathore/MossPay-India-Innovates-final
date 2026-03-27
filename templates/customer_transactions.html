@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MossPay | Transaction History</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #FFFFFF; --sidebar-bg: #FFFFFF; --card-bg: #FFFFFF; --text-main: #1E293B; --text-muted: #64748B; --primary-green: #29683B; --border-color: #E2E8F0; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); }
+        .top-navbar { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 16px 24px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 16px; }
+        .back-btn { font-size: 14px; cursor: pointer; background: none; border: none; color: var(--text-muted); font-weight: 600; padding: 0; display: flex; align-items: center; }
+        .hamburger { font-size: 24px; cursor: pointer; background: none; border: none; color: var(--text-main); padding: 0; }
+        .brand-logo { font-size: 20px; font-weight: 700; color: var(--primary-green); }
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; position: fixed; top: 0; left: -260px; height: 100vh; transition: 0.3s; z-index: 1000; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 24px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
+        .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+        .nav-link { padding: 12px 24px; color: var(--text-muted); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { background-color: #F1F5F9; color: var(--primary-green); border-right: 3px solid var(--primary-green); }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); backdrop-filter: blur(2px); z-index: 999; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .overlay.active { opacity: 1; visibility: visible; }
+        
+        .main-content { padding: 32px 24px; max-width: 600px; margin: 0 auto; }
+        
+        /* GPay/Paytm Style Transaction List */
+        .transaction-list { display: flex; flex-direction: column; }
+        .txn-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-color); }
+        .txn-left { display: flex; align-items: center; gap: 16px; }
+        .txn-avatar { width: 48px; height: 48px; border-radius: 50%; background: #F1F5F9; color: var(--primary-green); display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: 700; text-transform: uppercase; }
+        .txn-details h4 { margin: 0 0 4px 0; font-size: 15px; font-weight: 600; color: var(--text-main); }
+        .txn-details p { margin: 0; font-size: 13px; color: var(--text-muted); }
+        .txn-amount { font-size: 16px; font-weight: 600; color: var(--text-main); text-align: right; }
+        
+        .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <header class="top-navbar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="window.history.back()">← Back</button>
+            <button class="hamburger" onclick="toggleSidebar()">☰</button>
+            <div class="brand-logo">🌿 MossPay</div>
+        </div>
+        <a href="/customer/login" style="text-decoration: none; color: var(--text-muted); font-size: 14px; font-weight: 600;">Log Out</a>
+    </header>
+
+    <div class="overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<aside class="sidebar" id="appSidebar">
+        <div class="sidebar-header"><div class="brand-logo">MossPay</div><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
+        <a href="/customer/dashboard" class="nav-link">My Wallet</a>
+        <a href="/customer/discover" class="nav-link">Discover Vendors</a>
+        <a href="/customer/bills" class="nav-link">Your Bills</a>
+        <a href="/customer/journey" class="nav-link">Product Journey</a>
+        <a href="/customer/transactions" class="nav-link">Transaction History</a>
+        <a href="/customer/redeem" class="nav-link">Redeem MossCoins</a>
+        <a href="/customer/leaderboard" class="nav-link">Leaderboards</a>
+        <a href="/customer/referral" class="nav-link">Refer & Earn</a>
+        <a href="#" class="nav-link">Settings</a>
+    </aside>
+
+    <main class="main-content">
+        <h1 style="margin-top:0;">Transaction History</h1>
+        <p style="color: var(--text-muted); margin-bottom: 24px;">Your recent payments.</p>
+        
+        <div class="transaction-list">
+            {% for txn in transactions %}
+            <div class="txn-item">
+                <div class="txn-left">
+                    <div class="txn-avatar">{{ txn['seller_name'][0] }}</div>
+                    <div class="txn-details">
+                        <h4>Paid to {{ txn['seller_name'] }}</h4>
+                        <p>{{ txn['date'] }}</p>
+                    </div>
+                </div>
+                <div class="txn-amount">- ₹{{ "%.2f"|format(txn['amount']) }}</div>
+            </div>
+            {% else %}
+                <div class="empty-state">
+                    <h3>No transactions yet.</h3>
+                </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <script>
+        function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
+    </script>
+</body>
+</html>

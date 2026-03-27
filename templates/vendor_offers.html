@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MossPay | Manage Offers</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg:#F8FAFC; --card:#FFFFFF; --text:#1E293B; --muted:#64748B; --green:#29683B; --border:#E2E8F0; }
+        body{margin:0;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+        .top-navbar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:10}
+        .back-btn{border:none;background:none;color:var(--muted);font-size:14px;cursor:pointer}
+        .page-title{font-weight:700;font-size:1.15rem;color:var(--green)}
+        .content{max-width:1000px;margin:20px auto;padding:0 20px}
+        .card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px}
+        .card h3{margin:0 0 12px}
+        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .form-grid input,.form-grid textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;}
+        .btn{padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:600}
+        .btn-primary{background:var(--green);color:#fff}
+        .btn-secondary{background:#F1F5F9;color:#1f2937}
+        table{width:100%;border-collapse:collapse;margin-top:12px}
+        th,td{padding:10px;border:1px solid var(--border);text-align:left}
+        th{background:#F8FAFC;color:var(--muted)}
+    </style>
+</head>
+<body>
+    <header class="top-navbar">
+        <button class="back-btn" onclick="window.location.href='/vendor/dashboard'">← Back</button>
+        <div class="page-title">Manage Offers</div>
+        <div style="width:55px"></div>
+    </header>
+    <main class="content">
+        <div class="card">
+            <h3>Create a New Offer</h3>
+            <form method="post" action="/vendor/offers">
+                <div class="form-grid">
+                    <input type="text" name="title" placeholder="Offer title (e.g., 20% off refill)" required>
+                    <input type="number" step="0.01" name="discount" placeholder="Discount %" required>
+                    <input type="number" name="total_quantity" placeholder="Total available coupons" required>
+                    <input type="date" name="expires_at" placeholder="Expiry date (optional)">
+                </div>
+                <div style="margin-top:12px">
+                    <textarea name="description" rows="2" placeholder="Description (e.g., only for glass bottles)"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top:12px">Create New Offer</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Your Existing Offers</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Discount</th>
+                        <th>Available</th>
+                        <th>Claimed</th>
+                        <th>Status</th>
+                        <th>Expire</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for offer in offers %}
+                    <tr>
+                        <td>{{ offer.title }}</td>
+                        <td>{{ offer.discount_percentage }}%</td>
+                        <td>{{ offer.total_quantity }}</td>
+                        <td>{{ offer.claimed_count }}</td>
+                        <td>{{ 'Active' if offer.active else 'Disabled' }}</td>
+                        <td>{{ offer.expires_at or 'N/A' }}</td>
+                        <td>
+                            <form method="post" action="/vendor/offers/{{ offer.offer_id }}/toggle" style="display:inline">
+                                <input type="hidden" name="active" value="{{ 0 if offer.active else 1 }}">
+                                <button type="submit" class="btn btn-secondary">{{ 'Disable' if offer.active else 'Enable' }}</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" style="text-align:center;color:#64748B">No offers yet. Create one above.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+</html>

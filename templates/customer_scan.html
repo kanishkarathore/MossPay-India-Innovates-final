@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MossPay | Scan & Pay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #0F172A; --card-bg: #FFFFFF; --text-main: #1E293B; --primary-green: #22C55E; --border-color: #E2E8F0; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--card-bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Top Navigation */
+        .top-nav { padding: 20px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+        .back-btn { background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        
+        /* Simulated Camera Viewfinder */
+        .camera-view { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .viewfinder { width: 250px; height: 250px; border: 2px dashed rgba(255,255,255,0.5); border-radius: 20px; position: relative; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; }
+        .viewfinder::before { content: ''; position: absolute; width: 100%; height: 2px; background: var(--primary-green); animation: scan 2s infinite linear; box-shadow: 0 0 10px var(--primary-green); }
+        @keyframes scan { 0% { top: 10%; } 50% { top: 90%; } 100% { top: 10%; } }
+        
+        /* Bottom Sheet (White area where inputs happen) */
+        .bottom-sheet { background: var(--card-bg); color: var(--text-main); border-radius: 32px 32px 0 0; padding: 32px 24px; display: flex; flex-direction: column; gap: 20px; animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .sheet-title { margin: 0; font-size: 20px; font-weight: 700; text-align: center; }
+        
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        .input-group label { font-size: 13px; font-weight: 600; color: #64748B; }
+        .input-group select, .input-group input { padding: 16px; border: 1px solid var(--border-color); border-radius: 12px; font-size: 16px; font-family: 'Inter'; box-sizing: border-box; }
+        .input-group select:focus, .input-group input:focus { outline: none; border-color: var(--primary-green); }
+        
+        .btn-pay { background: var(--primary-green); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 700; font-size: 18px; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.4); transition: 0.2s; display: none; }
+        .btn-pay:hover { background: #16a34a; transform: translateY(-2px); }
+
+        /* Success Overlay */
+        #successOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary-green); z-index: 2000; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .check-circle { width: 80px; height: 80px; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 40px; color: var(--primary-green); margin-bottom: 24px; box-shadow: 0 0 0 20px rgba(255,255,255,0.2); }
+        .success-amount { font-size: 48px; font-weight: 800; margin: 0 0 8px 0; }
+        .reward-box { background: rgba(0,0,0,0.1); padding: 16px 24px; border-radius: 16px; margin-top: 32px; border: 1px solid rgba(255,255,255,0.2); }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <button class="back-btn" onclick="window.history.back()">✕</button>
+        <span style="font-weight: 600;">Scan & Pay</span>
+        <div style="width: 40px;"></div> </div>
+
+    <div class="camera-view">
+        <div class="viewfinder">
+            <span style="color: rgba(255,255,255,0.5); font-size: 14px; font-weight: 500;">Align QR Code</span>
+        </div>
+        <p style="color: rgba(255,255,255,0.7); font-size: 14px;">Or scan merchant QR, or pay via phone number below</p>
+    </div>
+
+    <div class="bottom-sheet">
+        <h2 class="sheet-title">Pay Merchant</h2>
+
+        <div class="input-group">
+            <label>Select Nearby Merchant (Simulate QR Scan)</label>
+            <select id="vendorSelect" onchange="fetchInventory()">
+                <option value="">-- Choose Merchant --</option>
+                {% for vendor in vendors %}
+                    <option value="{{ vendor['vendor_id'] }}">{{ vendor['business_name'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="input-group" id="itemGroup" style="display: none;">
+            <label>What are you buying?</label>
+            <select id="itemSelect" onchange="calculateTotal()">
+                <option value="">-- Choose Item --</option>
+            </select>
+        </div>
+
+        <div class="input-group" id="qtyGroup" style="display: none;">
+            <label>Quantity</label>
+            <input type="number" id="qtyInput" value="1" min="1" step="0.1" oninput="calculateTotal()">
+        </div>
+
+        <button class="btn-pay" id="payBtn" style="display:none;" onclick="processPayment()">Pay ₹0.00</button>
+
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(15,23,42,0.15);">
+            <h3 style="margin:0 0 10px;">Or send via mobile number</h3>
+            <div class="input-group">
+                <label>Recipient Phone Number</label>
+                <input type="tel" id="manualPhone" placeholder="Enter phone number">
+            </div>
+            <div class="input-group">
+                <label>Amount (₹)</label>
+                <input type="number" id="manualAmount" min="1" step="0.1" placeholder="0.00">
+            </div>
+            <button class="btn-pay" style="display:block;" onclick="sendByPhone()">Send via Phone</button>
+        </div>
+    </div>
+
+    <div id="successOverlay">
+        <div class="check-circle">✓</div>
+        <p style="font-size: 18px; margin: 0; font-weight: 600; opacity: 0.9;">Payment Successful</p>
+        <h1 class="success-amount" id="successAmount">₹0.00</h1>
+        <p style="font-size: 16px; margin: 0; opacity: 0.9;">Paid to <strong id="successVendor">Shop</strong></p>
+        
+        <div class="reward-box">
+            <div style="font-size: 24px; margin-bottom: 8px;">🪙 +<span id="successCoins">0</span> MossCoins</div>
+            <div style="font-size: 14px; font-weight: 500;">You saved <span id="successCo2">0</span> kg of CO2e!</div>
+        </div>
+        
+        <button style="margin-top: 40px; background: white; color: var(--primary-green); border: none; padding: 14px 32px; border-radius: 50px; font-weight: 700; font-size: 16px; cursor: pointer;" onclick="window.location.href='/customer/dashboard'">Back to Wallet</button>
+    </div>
+
+    <script>
+        let currentItems = [];
+
+        async function fetchInventory() {
+            const vendorId = document.getElementById('vendorSelect').value;
+            if (!vendorId) return;
+
+            const response = await fetch(`/api/get_vendor_items/${vendorId}`);
+            currentItems = await response.json();
+            
+            const itemSelect = document.getElementById('itemSelect');
+            itemSelect.innerHTML = '<option value="">-- Choose Item --</option>';
+            
+            currentItems.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.batch_id;
+                // Store price as an attribute so we can read it instantly
+                opt.setAttribute('data-price', item.price);
+                opt.innerText = `${item.product_name} (₹${item.price} / ${item.unit})`;
+                itemSelect.appendChild(opt);
+            });
+
+            document.getElementById('itemGroup').style.display = 'flex';
+        }
+
+        function calculateTotal() {
+            const itemSelect = document.getElementById('itemSelect');
+            const qty = document.getElementById('qtyInput').value;
+            
+            if (itemSelect.value && qty > 0) {
+                const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+                const price = parseFloat(selectedOption.getAttribute('data-price'));
+                const total = price * qty;
+                
+                document.getElementById('qtyGroup').style.display = 'flex';
+                document.getElementById('payBtn').style.display = 'block';
+                document.getElementById('payBtn').innerText = `Securely Pay ₹${total.toFixed(2)}`;
+            } else {
+                document.getElementById('payBtn').style.display = 'none';
+            }
+        }
+
+        async function processPayment() {
+            const vendorSelect = document.getElementById('vendorSelect');
+            const vendorName = vendorSelect.options[vendorSelect.selectedIndex].text;
+            
+            const payload = {
+                vendor_id: vendorSelect.value,
+                batch_id: document.getElementById('itemSelect').value,
+                quantity: document.getElementById('qtyInput').value
+            };
+
+            document.getElementById('payBtn').innerText = "Processing...";
+            document.getElementById('payBtn').style.opacity = "0.7";
+
+            try {
+                const response = await fetch('/api/process_payment', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                const data = await response.json();
+                
+                if(data.status === 'success') {
+                    document.getElementById('successAmount').innerText = `₹${data.amount_paid.toFixed(2)}`;
+                    document.getElementById('successVendor').innerText = vendorName;
+                    document.getElementById('successCoins').innerText = data.coins_earned;
+                    document.getElementById('successCo2').innerText = data.co2_saved;
+                    document.getElementById('successOverlay').style.display = 'flex';
+                } else {
+                    alert(data.message);
+                    document.getElementById('payBtn').innerText = "Try Again";
+                    document.getElementById('payBtn').style.opacity = "1";
+                }
+            } catch (error) { 
+                alert("Payment failed. Network error."); 
+                document.getElementById('payBtn').innerText = "Try Again";
+                document.getElementById('payBtn').style.opacity = "1";
+            }
+        }
+
+        async function sendByPhone() {
+            const phone = document.getElementById('manualPhone').value.trim();
+            const amount = parseFloat(document.getElementById('manualAmount').value);
+            if (!phone || !amount || amount <= 0) {
+                alert('Enter receiver phone and valid amount');
+                return;
+            }
+
+            const btn = event.target;
+            btn.innerText = 'Sending...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/send_money_by_phone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, amount })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    document.getElementById('successAmount').innerText = `₹${amount.toFixed(2)}`;
+                    document.getElementById('successVendor').innerText = `Phone: ${phone}`;
+                    document.getElementById('successCoins').innerText = '0';
+                    document.getElementById('successCo2').innerText = '0.00';
+                    document.getElementById('successOverlay').style.display = 'flex';
+                } else {
+                    alert(data.message);
+                    btn.innerText = 'Send via Phone';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert('Network error');
+                btn.innerText = 'Send via Phone';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

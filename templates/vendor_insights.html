@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MossPay | Customer Insights</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #F8FAFC; --card: #FFFFFF; --text: #1E293B; --muted: #64748B; --green: #29683B; --border: #E2E8F0; }
+        body { margin:0; font-family: 'Inter', sans-serif; background:#F8FAFC; color:#1E293B; }
+        .top-navbar { display: flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid var(--border); background:white; position:sticky; top:0; z-index:100; }
+        .back-btn { background:none; border:none; color:var(--muted); font-weight:600; cursor:pointer; }
+        .page-title { font-size: 18px; font-weight:700; color:var(--green); }
+        .content { max-width: 1000px; margin: 20px auto; padding: 0 24px; }
+        .card { background:white; border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:20px; }
+        .card h3 { margin:0 0 12px; }
+        .segments { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+        .segment { border:1px solid var(--border); border-radius:12px; padding:14px; text-align:center; background:#F8FAFC; }
+        .segment strong { display:block; margin-top:8px; font-size:14px; color:var(--text);}        
+        table { width:100%; border-collapse:collapse; margin-top:12px; }
+        th,td { padding:10px; border:1px solid var(--border); text-align:left; }
+        th { background:#F1F5F9; }
+        .sparkline { width:100%; height:100px; }
+    </style>
+</head>
+<body>
+    <header class="top-navbar">
+        <button class="back-btn" onclick="window.location.href='/vendor/dashboard'">← Back</button>
+        <div class="page-title">Customer Insights</div>
+        <div style="width:50px;"></div>
+    </header>
+    <main class="content">
+        <div class="card">
+            <h3>Summary</h3>
+            <div class="segments">
+                <div class="segment"><strong>{{ total_customers }}</strong> Unique Customers</div>
+                <div class="segment"><strong>{{ total_transactions }}</strong> Completed Transactions</div>
+                <div class="segment"><strong>₹{{ total_revenue }}</strong> Total Revenue</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Customer Segments</h3>
+            <div class="segments">
+                <div class="segment"><strong>{{ segments['high_value'] }}</strong> High Value (≥₹2k)</div>
+                <div class="segment"><strong>{{ segments['mid_value'] }}</strong> Mid Value (₹500-2k)</div>
+                <div class="segment"><strong>{{ segments['low_value'] }}</strong> Low Value (<₹500)</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Top Customers</h3>
+            <table>
+                <thead><tr><th>Name</th><th>Phone</th><th>Visits</th><th>Revenue (₹)</th><th>CO2 (kg)</th></tr></thead>
+                <tbody>
+                    {% for c in top_customers %}
+                    <tr>
+                        <td>{{ c['full_name'] or 'Unknown' }}</td>
+                        <td>{{ c['buyer_phone'] }}</td>
+                        <td>{{ c['visits'] }}</td>
+                        <td>₹{{ '%.2f'|format(c['revenue'] or 0) }}</td>
+                        <td>{{ '%.2f'|format(c['co2'] or 0) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align:center;color:var(--muted);">No data yet</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MossPay | Merchant Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #F8FAFC; --card-bg: #FFFFFF; --text-main: #1E293B; --text-muted: #64748B; --primary-green: #29683B; --primary-hover: #1f4f2c; --input-border: #E2E8F0; }
+        body { margin: 0; padding: 0; background-color: var(--bg-color); font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: var(--text-main); }
+        .auth-card { width: 100%; max-width: 400px; background: var(--card-bg); padding: 40px 32px; border-radius: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); border: 1px solid rgba(226,232,240,0.8); box-sizing: border-box; margin: 20px; }
+        .brand-header { text-align: center; margin-bottom: 32px; }
+        .brand-header h1 { font-size: 24px; font-weight: 800; margin: 0 0 8px 0; letter-spacing: -0.5px; }
+        .brand-header p { font-size: 14px; color: var(--text-muted); margin: 0; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 8px; }
+        .input-group input { width: 100%; padding: 14px; border: 1px solid var(--input-border); border-radius: 12px; font-size: 15px; font-family: 'Inter', sans-serif; box-sizing: border-box; transition: all 0.2s ease; }
+        .input-group input:focus { outline: none; border-color: var(--primary-green); box-shadow: 0 0 0 3px rgba(41,104,59,0.15); }
+        .btn-submit { width: 100%; padding: 16px; background-color: var(--primary-green); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; margin-top: 8px; }
+        .btn-submit:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        .toggle-link { text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-muted); }
+        .toggle-link a { color: var(--primary-green); font-weight: 600; text-decoration: none; cursor: pointer; }
+        .toggle-link a:hover { text-decoration: underline; }
+        #registerForm { display: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div id="loginForm" class="fade-in">
+            <div class="brand-header">
+                <h1>Merchant Login</h1>
+                <p>Welcome back to MossPay</p>
+            </div>
+            <form onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="loginEmail" placeholder="vendor@company.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-submit">Sign In</button>
+            </form>
+            <div class="toggle-link">New user? <a onclick="toggleForms()">Register here</a></div>
+        </div>
+
+        <div id="registerForm" class="fade-in">
+            <div class="brand-header">
+                <h1>Create Account</h1>
+                <p>Join the green supply chain</p>
+            </div>
+            <form onsubmit="handleRegister(event)">
+                <div class="input-group">
+                    <label>Business Name</label>
+                    <input type="text" id="regBusinessName" placeholder="e.g. GreenTech Farms" required>
+                </div>
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="regEmail" placeholder="hello@company.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Phone Number (Used for eBills)</label>
+                    <input type="tel" id="regPhone" placeholder="10-digit number" required>
+                </div>
+                <div class="input-group">
+                    <label>Shop Location (City or Address)</label>
+                    <input type="text" id="regLocation" placeholder="e.g. Bhopal, Madhya Pradesh" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="regPassword" placeholder="Create a password" required>
+                </div>
+                <button type="submit" class="btn-submit">Create Account</button>
+            </form>
+            <div class="toggle-link">Already have an account? <a onclick="toggleForms()">Log in</a></div>
+        </div>
+    </div>
+
+    <script>
+        function toggleForms() {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            if (loginForm.style.display === 'none') {
+                loginForm.style.display = 'block'; registerForm.style.display = 'none';
+            } else {
+                loginForm.style.display = 'none'; registerForm.style.display = 'block';
+            }
+        }
+
+        async function handleRegister(event) {
+            event.preventDefault();
+            const payload = {
+                business_name: document.getElementById('regBusinessName').value,
+                email: document.getElementById('regEmail').value,
+                phone_number: document.getElementById('regPhone').value, // ADDED PHONE
+                location_name: document.getElementById('regLocation').value,
+                password: document.getElementById('regPassword').value
+            };
+            try {
+                const response = await fetch('/api/register', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    alert(data.message); event.target.reset();
+                    document.getElementById('loginEmail').value = payload.email; toggleForms();
+                } else { alert(data.message); }
+            } catch (error) { alert("Registration failed."); }
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const payload = { email: document.getElementById('loginEmail').value, password: document.getElementById('loginPassword').value };
+            try {
+                const response = await fetch('/api/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                const data = await response.json();
+                if (data.status === 'success') window.location.href = data.redirect_url;
+                else alert(data.message);
+            } catch (error) { alert("Login failed."); }
+        }
+    </script>
+</body>
+</html>

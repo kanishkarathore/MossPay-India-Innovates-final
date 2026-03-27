@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MossPay | Inbound Bill History</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #F8FAFC; --card: #FFFFFF; --text: #1E293B; --muted: #64748B; --primary: #29683B; --border: #E2E8F0; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); }
+        
+        .navbar { display: flex; align-items: center; padding: 16px 24px; background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .brand { font-size: 20px; font-weight: 700; color: var(--primary); text-decoration: none; }
+        
+        .main-content { padding: 32px 24px; max-width: 1100px; margin: 0 auto; }
+        .header-section { margin-bottom: 30px; }
+        .header-section h1 { font-size: 26px; margin: 0 0 10px 0; }
+        .header-section p { color: var(--muted); font-size: 14px; }
+
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #F1F5F9; padding: 16px; font-size: 12px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+        td { padding: 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+
+        /* Buttons & Badges */
+        .btn-accept { background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 13px; }
+        .btn-accept:hover { background: #1f4f2c; transform: translateY(-1px); }
+        .badge-added { background: #F0FDF4; color: #166534; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; border: 1px solid #BBF7D0; }
+
+        /* Modal & Animation */
+        #acceptModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-box { background: white; padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-top: 8px solid var(--primary); }
+        
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--muted); }
+        .input-group input, .input-group select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; box-sizing: border-box; }
+
+        /* Carbon Engine Pulse */
+        .calc-stage { display: none; background: #F0FDF4; border: 1px solid #BBF7D0; padding: 16px; border-radius: 12px; margin-bottom: 20px; }
+        .calc-line { font-size: 13px; margin-bottom: 8px; color: #166534; display: flex; align-items: center; gap: 10px; font-weight: 500; }
+        .dot-pulse { width: 8px; height: 8px; background: #22C55E; border-radius: 50%; animation: pulse 1s infinite alternate; }
+        @keyframes pulse { from { opacity: 0.3; transform: scale(0.8); } to { opacity: 1; transform: scale(1.1); } }
+
+        .btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-cancel { width: 100%; padding: 12px; background: transparent; color: var(--muted); border: none; cursor: pointer; font-size: 13px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+
+    <header class="navbar" style="display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <button class="back-btn" onclick="window.location.href='/vendor/dashboard'">← Back</button>
+            <a href="/vendor/dashboard" class="brand">MossPay</a>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="header-section">
+            <h1>Your Bill History</h1>
+            <p>Shipments routed to your business. Accept them to link the carbon trail to your local inventory.</p>
+        </div>
+
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Sender</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Cost Basis</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in bills %}
+                    <tr>
+                        <td style="color: var(--muted);">{{ bill['timestamp'].split(' ')[0] }}</td>
+                        <td style="font-weight: 600;">{{ bill['seller_name'] }}</td>
+                        <td style="text-transform: capitalize;">{{ bill['product_name'] }}</td>
+                        <td>{{ bill['quantity'] }} kg</td>
+                        <td style="font-weight: 700; color: #D97706;">₹{{ "%.2f"|format(bill['price_per_unit']) }}</td>
+                        <td>
+                            {% if bill['status'] == 'Pending' %}
+                                <button class="btn-accept" onclick="openModal('{{ bill['txn_id'] }}', '{{ bill['product_name'] }}', '{{ bill['quantity'] }}', '{{ bill['price_per_unit'] }}')">
+                                    📥 Add to Inventory
+                                </button>
+                            {% else %}
+                                <span class="badge-added">✅ Added to Inventory</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align: center; padding: 48px; color: var(--muted);">No inbound shipments found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="acceptModal">
+        <div class="modal-box">
+            <h2 id="mTitle" style="margin-top:0;">Accept Shipment</h2>
+            <p id="mSub" style="font-size: 13px; color: var(--muted); margin-bottom: 24px;"></p>
+            
+            <div id="inputArea">
+                <div class="input-group">
+                    <label>Set Your Selling Price (₹/kg)</label>
+                    <input type="number" id="newPrice" step="0.01">
+                    <small id="priceHint" style="color: #EF4444; font-size: 11px; margin-top: 5px; display: block;"></small>
+                </div>
+
+                <div class="input-group">
+                    <label>Secondary Packaging</label>
+                    <select id="packaging">
+                        <option value="jute">Jute Bags (Eco-friendly)</option>
+                        <option value="plastic">Plastic Wrap (High Emission)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="calcBox" class="calc-stage">
+                <div class="calc-line"><div class="dot-pulse"></div> <span id="s1">Retrieving Geolocation...</span></div>
+                <div class="calc-line"><div class="dot-pulse"></div> <span id="s2">Calculating Transport CO2...</span></div>
+                <div class="calc-line"><div class="dot-pulse"></div> <span id="s3">Linking Carbon Trail...</span></div>
+            </div>
+
+            <button class="btn-submit" id="submitBtn" onclick="submitAcceptance()">Confirm & Update Inventory</button>
+            <button class="btn-cancel" id="cancelBtn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        let activeTxnId = null;
+        let costPrice = 0;
+
+        function openModal(txnId, name, qty, price) {
+            activeTxnId = txnId;
+            costPrice = parseFloat(price);
+            
+            document.getElementById('mTitle').innerText = "Accept " + name;
+            document.getElementById('mSub').innerText = "Quantity: " + qty + " kg | Purchased @ ₹" + price + "/kg";
+            
+            const priceInput = document.getElementById('newPrice');
+            priceInput.value = costPrice;
+            priceInput.min = costPrice;
+            
+            document.getElementById('calcBox').style.display = 'none';
+            document.getElementById('inputArea').style.display = 'block';
+            document.getElementById('submitBtn').style.display = 'block';
+            
+            document.getElementById('acceptModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('acceptModal').style.display = 'none';
+        }
+
+        async function submitAcceptance() {
+            const price = parseFloat(document.getElementById('newPrice').value);
+            const pkg = document.getElementById('packaging').value;
+            const btn = document.getElementById('submitBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const calcBox = document.getElementById('calcBox');
+            const inputArea = document.getElementById('inputArea');
+
+            if (!price || price < costPrice) {
+                alert("Selling price cannot be less than your purchase cost: ₹" + costPrice.toFixed(2));
+                return;
+            }
+
+            // Start High-Tech Animation
+            inputArea.style.display = 'none';
+            btn.style.display = 'none';
+            cancelBtn.style.display = 'none';
+            calcBox.style.display = 'block';
+
+            const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+            document.getElementById('s1').innerText = "📍 Seller & Buyer Mapped...";
+            await sleep(800);
+            document.getElementById('s2').innerText = "🚚 Transport Footprint Estimated...";
+            await sleep(800);
+            document.getElementById('s3').innerText = "🌿 Finalizing MossPay Ledger...";
+            await sleep(600);
+
+            try {
+                const res = await fetch('/api/accept_ebill', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        txn_id: activeTxnId,
+                        new_price: price,
+                        packaging: pkg
+                    })
+                });
+
+                const data = await res.json();
+                if (data.status === 'success') {
+                    alert("Stock Verified! Leg-2 Carbon Trail established.");
+                    window.location.reload();
+                } else {
+                    alert("Error: " + data.message);
+                    window.location.reload();
+                }
+            } catch (err) {
+                alert("Connection error. Inventory not updated.");
+                window.location.reload();
+            }
+        }
+    </script>
+</body>
+</html>

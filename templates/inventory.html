@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MossPay | Inventory Ledger</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #F8FAFC; --sidebar-bg: #FFFFFF; --card-bg: #FFFFFF; --text-main: #1E293B; --text-muted: #64748B; --primary-green: #29683B; --border-color: #E2E8F0; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); }
+        .top-navbar { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 16px 24px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 16px; }
+        .back-btn { font-size: 14px; cursor: pointer; background: none; border: none; color: var(--text-muted); font-weight: 600; padding: 0; transition: color 0.2s; display: flex; align-items: center; }
+        .back-btn:hover { color: var(--primary-green); }
+        .hamburger { font-size: 24px; cursor: pointer; background: none; border: none; color: var(--text-main); padding: 0; }
+        .brand-logo { font-size: 20px; font-weight: 700; color: var(--primary-green); }
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; position: fixed; top: 0; left: -260px; height: 100vh; transition: 0.3s; z-index: 1000; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 24px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
+        .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+        .nav-link { padding: 12px 24px; color: var(--text-muted); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { background-color: #F1F5F9; color: var(--primary-green); border-right: 3px solid var(--primary-green); }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); backdrop-filter: blur(2px); z-index: 999; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .overlay.active { opacity: 1; visibility: visible; }
+        .main-content { padding: 32px 24px; max-width: 1100px; margin: 0 auto; }
+        .header-section { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
+        .header-section h1 { margin: 0; font-size: 24px; font-weight: 700; }
+        .header-section p { margin: 8px 0 0 0; color: var(--text-muted); font-size: 15px; }
+        .btn-add { background-color: var(--primary-green); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        .btn-add:hover { background-color: #1f4f2c; transform: translateY(-1px); }
+        .card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-color); padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding-bottom: 16px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; border-bottom: 1px solid var(--border-color); }
+        td { padding: 16px 0; border-bottom: 1px solid var(--border-color); font-size: 14px; color: var(--text-main); font-weight: 500; }
+        .co2-badge { background: #DCFCE7; color: #166534; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 13px; }
+        #itemModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-card { background: white; padding: 32px; border-radius: 20px; width: 90%; max-width: 450px; }
+        .modal-card h2 { margin-top: 0; font-size: 20px; }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+        .input-group input, .input-group select { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; font-family: 'Inter', sans-serif; box-sizing: border-box; }
+        .row { display: flex; gap: 16px; } .row .input-group { flex: 1; }
+        #engineOutput { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--border-color); }
+        .engine-line { font-size: 14px; color: var(--text-muted); margin-bottom: 10px; display: none; }
+        .engine-line strong { color: var(--text-main); }
+        .engine-total { font-size: 18px; font-weight: 700; color: #166534; margin-top: 16px; display: none; background: #DCFCE7; padding: 12px; border-radius: 8px; text-align: center; }
+        .btn-full { width: 100%; padding: 14px; background: var(--primary-green); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+    </style>
+</head>
+<body>
+    <header class="top-navbar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="window.history.back()">← Back</button>
+            <button class="hamburger" onclick="toggleSidebar()">☰</button>
+            <div class="brand-logo">🌿 MossPay</div>
+        </div>
+        <a href="/vendor/login" style="text-decoration: none; color: var(--text-muted); font-size: 14px; font-weight: 500;">Log Out</a>
+    </header>
+
+    <div class="overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+ <aside class="sidebar" id="appSidebar">
+        <div class="sidebar-header"><div class="brand-logo" style="color: white;">MossPay</div><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
+        <a href="/vendor/dashboard" class="nav-link">Dashboard</a>
+        <a href="/vendor/inventory" class="nav-link">Inventory Ledger</a>
+        <a href="/vendor/transactions" class="nav-link">Transaction History</a>
+        <a href="/vendor/your_bills" class="nav-link">Inbound Bills</a>
+        <a href="/vendor/customer_insights" class="nav-link">Customer Insights</a>
+        <a href="/vendor/offers" class="nav-link">Manage Offers</a>
+        <a href="/vendor/discover" class="nav-link">Discover Vendors</a>
+        <a href="/vendor/profile" class="nav-link">Manage Profile</a>
+    </aside>
+
+    <main class="main-content">
+        <div class="header-section">
+            <div><h1>Inventory Ledger</h1><p>Track your stock and its real-time carbon footprint.</p></div>
+            <button class="btn-add" onclick="openModal()">➕ Add New Item</button>
+        </div>
+        <div class="card">
+            <table>
+                <thead><tr><th>Product Name</th><th>Quantity</th><th>Unit Price</th><th>Pkg Type</th><th>Total Carbon Emission</th></tr></thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td style="text-transform: capitalize;">{{ item['product_name'] }}</td>
+                        <td>{{ item['quantity'] }} {{ item['unit'] }}</td>
+                        <td>₹{{ item['price'] }} / {{ item['unit'] }}</td>
+                        <td style="text-transform: capitalize;">{{ item['packaging_type'] }}</td>
+                        <td><span class="co2-badge">{{ item['total_co2e'] }} kg CO2e</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--text-muted);">No items in inventory.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="itemModal">
+        <div class="modal-card">
+            <h2>Add Item to Inventory</h2>
+            <form id="addItemForm" onsubmit="submitItem(event)">
+                <div class="input-group"><label>Item Name</label><input type="text" id="itemName" required></div>
+                <div class="row">
+                    <div class="input-group"><label>Quantity</label><input type="number" id="itemQty" required></div>
+                    <div class="input-group">
+                        <label>Unit</label>
+                        <select id="itemUnit" required>
+                            <option value="kg">Kilograms (kg)</option><option value="l">Liters (L)</option><option value="per piece">Per Piece</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-group"><label>Price (per unit)</label><input type="number" id="itemPrice" required></div>
+                    <div class="input-group">
+                        <label>Packaging Type</label>
+                        <select id="itemPkg" required>
+                            <option value="jute">Jute Bags (Eco)</option><option value="paper">Paper (Eco)</option><option value="plastic">Plastic (High Emission)</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn-full" id="calcBtn">Calculate Carbon & Add</button>
+            </form>
+            <div id="engineOutput">
+                <div class="engine-line" id="line1">⚙️ Manufacturing Emission... <strong id="val1"></strong></div>
+                <div class="engine-line" id="line2" style="display:none;">🚚 Transport Emission... <strong id="val2">0 kg (Origin Item)</strong></div>
+                <div class="engine-line" id="line3">📦 Packaging Emission... <strong id="val3"></strong></div>
+                <div class="engine-line" id="line4">❄️ Base Shelf Footprint... <strong id="val4"></strong></div>
+                <div class="engine-total" id="lineTotal"></div>
+                <button class="btn-full" style="background: var(--text-main); display: none;" id="doneBtn" onclick="window.location.reload()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
+        function openModal() { document.getElementById('itemModal').style.display = 'flex'; }
+        async function submitItem(event) {
+            event.preventDefault();
+            document.getElementById('calcBtn').style.display = 'none'; document.getElementById('engineOutput').style.display = 'block';
+            const payload = {
+                name: document.getElementById('itemName').value, quantity: document.getElementById('itemQty').value,
+                unit: document.getElementById('itemUnit').value, price: document.getElementById('itemPrice').value,
+                packaging: document.getElementById('itemPkg').value
+            };
+            try {
+                const response = await fetch('/api/add_inventory_item', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const data = await response.json();
+                if(data.status === 'success') {
+                    setTimeout(() => { document.getElementById('line1').style.display = 'block'; document.getElementById('val1').innerText = data.mfg + " kg"; }, 600);
+                    setTimeout(() => { document.getElementById('line2').style.display = 'block'; }, 1400); 
+                    setTimeout(() => { document.getElementById('line3').style.display = 'block'; document.getElementById('val3').innerText = data.packaging + " kg"; }, 2200);
+                    setTimeout(() => { document.getElementById('line4').style.display = 'block'; document.getElementById('val4').innerText = data.shelf + " kg"; }, 3000);
+                    setTimeout(() => { document.getElementById('lineTotal').style.display = 'block'; document.getElementById('lineTotal').innerHTML = `Total Carbon Emission: ${data.total} kg CO2e`; document.getElementById('doneBtn').style.display = 'block'; }, 3800);
+                }
+            } catch (error) { alert('Failed to add item.'); }
+        }
+    </script>
+</body>
+</html>

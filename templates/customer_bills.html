@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MossPay | Your Bills</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #F8FAFC; --card: #FFFFFF; --text: #1E293B; --green: #29683B; --border: #E2E8F0; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+        .navbar { background: white; padding: 15px 25px; border-bottom: 1px solid var(--border); font-weight: 700; color: var(--green); font-size: 20px; }
+        .main-content { padding: 30px; max-width: 600px; margin: 0 auto; }
+        .bill-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 15px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .bill-card:hover { border-color: var(--green); transform: translateY(-2px); }
+        h2 { margin: 0 0 5px 0; font-size: 18px; }
+        .item-line { color: #64748B; font-size: 14px; text-transform: capitalize; }
+        
+        #receiptModal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content:center; align-items:center; }
+        .receipt-paper { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 380px; border-top: 8px solid var(--green); }
+        .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+        .total-row { font-weight: 700; font-size: 18px; border-top: 1px dashed #DDD; padding-top: 15px; margin-top: 15px; }
+        .btn-close { width: 100%; padding: 12px; background: #F1F5F9; border: none; border-radius: 8px; margin-top: 20px; cursor: pointer; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="navbar" style="display:flex; align-items:center; justify-content:space-between;">
+        <button class="back-btn" onclick="window.location.href='/customer/dashboard'" style="background:none; border:none; font-weight:600; color:#64748B; cursor:pointer;">← Back</button>
+        <span style="font-weight:700; color:#29683B;">MossPay</span>
+        <span style="width: 50px;"></span>
+    </div>
+    <div class="main-content">
+        <h1>Your Bills</h1>
+        
+        {% for bill in bills %}
+            <div class="bill-card" onclick='openReceipt({{ bill | tojson | safe }})'>
+                <h2>{{ bill.seller_name }}</h2>
+                
+                <p class="item-line">
+                    {% if bill.product_list and bill.product_list|length > 0 %}
+                        {{ bill.product_list[0].name }} 
+                        {% if bill.product_list|length > 1 %} + {{ bill.product_list|length - 1 }} more {% endif %}
+                    {% else %}
+                        View items
+                    {% endif %}
+                </p>
+
+                <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:12px; color:#94A3B8;">
+                    <span>{{ bill.date }}</span>
+                    <span style="font-weight:700; color:var(--green);">₹{{ "%.2f"|format(bill.total_price) }}</span>
+                </div>
+            </div>
+        {% else %}
+            <p style="text-align:center; color:#94A3B8; margin-top:50px;">No bills found.</p>
+        {% endfor %}
+    </div>
+
+    <div id="receiptModal">
+        <div class="receipt-paper">
+            <h3 id="rShop" style="text-align:center; margin-bottom:5px;"></h3>
+            <p id="rDate" style="text-align:center; font-size:12px; color:#64748B; margin-bottom:20px;"></p>
+            <div id="rItems"></div>
+            <div class="row total-row">
+                <span>Total Amount</span>
+                <span id="rTotal"></span>
+            </div>
+            <div style="margin-top:15px; padding:12px; background:#F0FDF4; border-radius:8px; color:var(--green); font-size:13px; text-align:center; font-weight:600;">
+                🌱 Carbon Footprint: <span id="rCo2"></span> kg
+            </div>
+            <div id="claimSection" style="margin-top:15px; text-align:center;">
+                <!-- Claim button or claimed message -->
+            </div>
+            <button class="btn-close" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        function openReceipt(data) {
+            document.getElementById('rShop').innerText = data.seller_name;
+            document.getElementById('rDate').innerText = data.date;
+            document.getElementById('rTotal').innerText = '₹' + data.total_price.toFixed(2);
+            document.getElementById('rCo2').innerText = data.total_co2_incurred.toFixed(2);
+            
+            const container = document.getElementById('rItems');
+            container.innerHTML = '';
+            // Updated to use product_list
+            data.product_list.forEach(item => {
+                container.innerHTML += `<div class="row"><span>${item.name} (x${item.qty})</span><span>₹${item.price.toFixed(2)}</span></div>`;
+            });
+
+            const claimSection = document.getElementById('claimSection');
+            if (data.claimed) {
+                claimSection.innerHTML = `<div style="padding:12px; background:#E0F2FE; border-radius:8px; color:#0277BD; font-size:13px; font-weight:600;">✅ Claimed: ${data.potential_coins} MossCoins</div>`;
+            } else {
+                claimSection.innerHTML = `<button id="claimBtn" style="width:100%; padding:12px; background:#29683B; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;" onclick="claimCoins('${data.txn_id}')">Claim ${data.potential_coins} MossCoins</button>`;
+            }
+
+            document.getElementById('receiptModal').style.display = 'flex';
+        }
+        function claimCoins(txnId) {
+            const btn = document.getElementById('claimBtn');
+            btn.innerText = 'Claiming...';
+            btn.disabled = true;
+            fetch('/api/claim_mosscoins', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ txn_id: txnId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('claimSection').innerHTML = `<div style="padding:12px; background:#E0F2FE; border-radius:8px; color:#0277BD; font-size:13px; font-weight:600;">✅ Claimed: ${data.coins_earned} MossCoins</div>`;
+                    // Optionally update global MossCoins if displayed
+                } else {
+                    alert('Error: ' + data.message);
+                    btn.innerText = 'Claim MossCoins';
+                    btn.disabled = false;
+                }
+            })
+            .catch(error => {
+                alert('Network error');
+                btn.innerText = 'Claim MossCoins';
+                btn.disabled = false;
+            });
+        }
+        function closeModal() { document.getElementById('receiptModal').style.display = 'none'; }
+    </script>
+</body>
+</html>

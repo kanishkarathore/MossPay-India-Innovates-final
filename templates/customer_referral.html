@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MossPay | Refer & Earn</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #F8FAFC; --sidebar-bg: #FFFFFF; --card-bg: #FFFFFF; --text-main: #1E293B; --text-muted: #64748B; --primary-green: #29683B; --border-color: #E2E8F0; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); }
+        
+        .top-navbar { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 16px 24px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 16px; }
+        .back-btn { font-size: 14px; cursor: pointer; background: none; border: none; color: var(--text-muted); font-weight: 600; padding: 0; display: flex; align-items: center; }
+        .hamburger { font-size: 24px; cursor: pointer; background: none; border: none; color: var(--text-main); padding: 0; }
+        .brand-logo { font-size: 20px; font-weight: 700; color: var(--primary-green); }
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; position: fixed; top: 0; left: -260px; height: 100vh; transition: 0.3s; z-index: 1000; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 24px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
+        .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+        .nav-link { padding: 12px 24px; color: var(--text-muted); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { background-color: #F1F5F9; color: var(--primary-green); border-right: 3px solid var(--primary-green); }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); backdrop-filter: blur(2px); z-index: 999; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .overlay.active { opacity: 1; visibility: visible; }
+        
+        .main-content { padding: 32px 24px; max-width: 600px; margin: 0 auto; text-align: center; }
+        
+        /* Hero Banner */
+        .hero-banner { background: linear-gradient(135deg, #10B981, #059669); color: white; padding: 40px 24px; border-radius: 24px; margin-bottom: 32px; position: relative; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.3); }
+        .hero-icon { font-size: 64px; margin-bottom: 16px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+        .hero-banner h1 { margin: 0 0 12px 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+        .hero-banner p { margin: 0; font-size: 15px; opacity: 0.9; line-height: 1.5; }
+
+        /* The Invite Code Box */
+        .code-box { background: var(--card-bg); border: 2px dashed #94A3B8; border-radius: 16px; padding: 24px; margin-bottom: 32px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+        .code-label { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .code-value { font-size: 28px; font-weight: 800; color: var(--primary-green); letter-spacing: 2px; }
+        
+        .btn-copy { background: #F1F5F9; color: var(--text-main); border: none; padding: 12px 24px; border-radius: 50px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .btn-copy:hover { background: #E2E8F0; transform: translateY(-1px); }
+
+        /* Steps */
+        .steps-container { text-align: left; background: var(--card-bg); padding: 24px; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); margin-bottom: 32px; }
+        .steps-container h3 { margin: 0 0 20px 0; font-size: 18px; font-weight: 700; color: var(--text-main); }
+        .step-item { display: flex; gap: 16px; margin-bottom: 20px; }
+        .step-item:last-child { margin-bottom: 0; }
+        .step-number { width: 32px; height: 32px; border-radius: 50%; background: #D1FAE5; color: #059669; font-weight: 700; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+        .step-text h4 { margin: 0 0 4px 0; font-size: 15px; color: var(--text-main); }
+        .step-text p { margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+        /* Stats Row */
+        .stats-row { display: flex; gap: 16px; }
+        .stat-box { flex: 1; background: var(--card-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px; text-align: left; }
+        .stat-box h4 { margin: 0 0 8px 0; font-size: 13px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+        .stat-box p { margin: 0; font-size: 24px; font-weight: 800; color: var(--text-main); }
+
+        /* Toast Notification */
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: #1E293B; color: white; padding: 12px 24px; border-radius: 50px; font-weight: 500; font-size: 14px; opacity: 0; transition: all 0.3s ease; z-index: 2000; display: flex; align-items: center; gap: 8px; }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <header class="top-navbar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="window.history.back()">← Back</button>
+            <button class="hamburger" onclick="toggleSidebar()">☰</button>
+            <div class="brand-logo">🌿 MossPay</div>
+        </div>
+        <a href="/customer/login" style="text-decoration: none; color: var(--text-muted); font-size: 14px; font-weight: 600;">Log Out</a>
+    </header>
+
+    <div class="overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <aside class="sidebar" id="appSidebar">
+        <div class="sidebar-header"><div class="brand-logo">MossPay</div><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
+        <a href="/customer/dashboard" class="nav-link">My Wallet</a>
+        <a href="/customer/discover" class="nav-link">Discover Vendors</a>
+        <a href="/customer/bills" class="nav-link">Your Bills</a>
+        <a href="/customer/journey" class="nav-link">Product Journey</a>
+        <a href="/customer/transactions" class="nav-link">Transaction History</a>
+        <a href="/customer/redeem" class="nav-link">Redeem MossCoins</a>
+        <a href="/customer/leaderboard" class="nav-link">Leaderboards</a>
+        <a href="/customer/referral" class="nav-link">Refer & Earn</a>
+        <a href="#" class="nav-link">Settings</a>
+    </aside>
+
+    <main class="main-content">
+        
+        <div class="hero-banner">
+            <div class="hero-icon">🎁</div>
+            <h1>Invite Friends, Earn Coins</h1>
+            <p>Get 50 MossCoins for every friend who joins MossPay and makes their first green purchase!</p>
+        </div>
+
+        <div class="code-box">
+            <div class="code-label">Your Unique Referral Code</div>
+            <div class="code-value" id="inviteCode">{{ invite_code }}</div>
+            <button class="btn-copy" onclick="copyCode()">📋 Copy Code</button>
+        </div>
+
+        <div class="steps-container">
+            <h3>How it works</h3>
+            <div class="step-item">
+                <div class="step-number">1</div>
+                <div class="step-text">
+                    <h4>Share your code</h4>
+                    <p>Send your unique invite code to friends and family.</p>
+                </div>
+            </div>
+            <div class="step-item">
+                <div class="step-number">2</div>
+                <div class="step-text">
+                    <h4>They join MossPay</h4>
+                    <p>Your friend registers and enters your code during sign-up.</p>
+                </div>
+            </div>
+            <div class="step-item">
+                <div class="step-number">3</div>
+                <div class="step-text">
+                    <h4>You both earn!</h4>
+                    <p>Once they make their first green purchase, both of you instantly receive 50 MossCoins.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-box">
+                <h4>Friends Invited</h4>
+                <p>0</p>
+            </div>
+            <div class="stat-box">
+                <h4>Coins Earned</h4>
+                <p style="color: var(--primary-green);">0 🪙</p>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="toast">✅ Code Copied to Clipboard!</div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('appSidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        function copyCode() {
+            const code = document.getElementById('inviteCode').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                const toast = document.getElementById('toast');
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }).catch(err => {
+                alert("Failed to copy code.");
+            });
+        }
+    </script>
+</body>
+</html>

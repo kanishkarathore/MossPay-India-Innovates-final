@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MossPay | Transaction Ledger</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #F8FAFC; --sidebar-bg: #1E293B; --sidebar-text: #E2E8F0; --card-bg: #FFFFFF; --text-main: #0F172A; --text-muted: #64748B; --primary-green: #059669; --border-color: #E2E8F0; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); }
+        
+        .top-navbar { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 16px 24px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 16px; }
+        .hamburger { font-size: 24px; cursor: pointer; background: none; border: none; color: var(--text-main); padding: 0; }
+        .brand-logo { font-size: 20px; font-weight: 700; color: var(--primary-green); }
+        
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); display: flex; flex-direction: column; position: fixed; top: 0; left: -260px; height: 100vh; transition: 0.3s; z-index: 1000; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px; }
+        .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--sidebar-text); }
+        .nav-link { padding: 12px 24px; color: var(--sidebar-text); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 12px; transition: 0.2s; opacity: 0.8; }
+        .nav-link:hover, .nav-link.active { background-color: rgba(255,255,255,0.1); opacity: 1; border-left: 4px solid var(--primary-green); }
+        
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); z-index: 999; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .overlay.active { opacity: 1; visibility: visible; }
+        
+        .main-content { padding: 32px 24px; max-width: 1000px; margin: 0 auto; }
+        
+        .card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding-bottom: 16px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; border-bottom: 1px solid var(--border-color); font-weight: 600; }
+        td { padding: 16px 0; border-bottom: 1px solid var(--border-color); font-size: 14px; font-weight: 500; }
+        .amount-col { color: var(--primary-green); font-weight: 700; }
+    </style>
+</head>
+<body>
+    <header class="top-navbar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="window.location.href='/vendor/dashboard'">← Back</button>
+            <button class="hamburger" onclick="toggleSidebar()">☰</button>
+            <div class="brand-logo">MossPay</div>
+        </div>
+        <a href="/vendor/login" style="text-decoration: none; color: var(--text-muted); font-size: 14px; font-weight: 500;">Log Out</a>
+    </header>
+
+    <div class="overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <aside class="sidebar" id="appSidebar">
+        <div class="sidebar-header"><div class="brand-logo" style="color: white;">MossPay</div><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
+        <a href="/vendor/dashboard" class="nav-link">Dashboard</a>
+        <a href="/vendor/inventory" class="nav-link">Inventory Ledger</a>
+        <a href="/vendor/transactions" class="nav-link active">Transaction History</a>
+        <a href="/vendor/your_bills" class="nav-link">Inbound Bills</a>
+        <a href="/vendor/customer_insights" class="nav-link">Customer Insights</a>
+        <a href="/vendor/offers" class="nav-link">Manage Offers</a>
+        <a href="/vendor/discover" class="nav-link">Discover Vendors</a>
+        <a href="/vendor/profile" class="nav-link">Manage Profile</a>
+    </aside>
+
+    <main class="main-content">
+        <h1 style="margin-top:0;">Outbound Transactions</h1>
+        <p style="color: var(--text-muted); margin-bottom: 32px;">A ledger of all sales and eBills generated.</p>
+        
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Customer Phone</th>
+                        <th>Product Sold</th>
+                        <th>Quantity</th>
+                        <th>Total Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for txn in transactions %}
+                    <tr>
+                        <td style="color: var(--text-muted); font-size: 13px;">{{ txn['timestamp'] }}</td>
+                        <td>{{ txn['buyer_phone'] }}</td>
+                        <td style="text-transform: capitalize;">{{ txn['product_name'] }}</td>
+                        <td>{{ txn['quantity'] }}</td>
+                        <td class="amount-col">+ ₹{{ "%.2f"|format(txn['amount']) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--text-muted);">No sales recorded yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
+    </script>
+</body>
+</html>

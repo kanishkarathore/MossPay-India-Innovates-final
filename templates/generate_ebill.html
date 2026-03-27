@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MossPay | Generate Bill</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #F8FAFC; --card: #FFFFFF; --text: #1E293B; --muted: #64748B; --primary: #29683B; --border: #E2E8F0; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); }
+        
+        /* Navbar */
+        .navbar { display: flex; align-items: center; justify-content: space-between; background: var(--card); padding: 16px 24px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .brand { font-size: 20px; font-weight: 700; color: var(--primary); }
+        
+        .container { padding: 32px; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; }
+        @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
+
+        .pane { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); display: flex; flex-direction: column; }
+        h2 { margin: 0 0 20px 0; font-size: 18px; font-weight: 700; color: var(--text); border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+
+        /* Search & List */
+        .search-input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; font-family: inherit; box-sizing: border-box; }
+        .item-list { overflow-y: auto; max-height: 450px; }
+        .item-card { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--bg); }
+        .item-details b { display: block; text-transform: capitalize; }
+        .item-details span { font-size: 13px; color: var(--muted); }
+
+        /* Counter */
+        .controls { display: flex; align-items: center; gap: 12px; }
+        .btn-qty { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+        .btn-qty:hover { border-color: var(--primary); color: var(--primary); }
+        .qty-val { font-weight: 600; min-width: 20px; text-align: center; }
+
+        /* Cart */
+        .cart-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+        .cart-empty { text-align: center; color: var(--muted); padding: 40px 0; }
+        .total-section { margin-top: auto; border-top: 2px dashed var(--bg); padding-top: 20px; }
+        .total-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 20px; }
+
+        .input-phone { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; font-size: 15px; text-align: center; box-sizing: border-box; }
+        .btn-submit { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <button class="back-btn" onclick="window.location.href='/vendor/dashboard'">← Back</button>
+            <div class="brand">MossPay | Merchant POS</div>
+        </div>
+        <a href="/vendor/dashboard" style="text-decoration:none; color:var(--muted); font-size:14px; font-weight:600;">Dashboard</a>
+    </nav>
+
+    <div class="container">
+        <div class="pane">
+            <h2>Select Products</h2>
+            <input type="text" class="search-input" id="search" placeholder="Search inventory..." onkeyup="render()">
+            <div class="item-list" id="inventory-list"></div>
+        </div>
+
+        <div class="pane">
+            <h2>Current Bill</h2>
+            <div id="cart-items" style="flex: 1;">
+                <div class="cart-empty">Your cart is empty</div>
+            </div>
+            
+            <div class="total-section">
+                <div class="total-row">
+                    <span>Total Amount</span>
+                    <span id="grand-total">₹0.00</span>
+                </div>
+                <input type="tel" id="customer-phone" class="input-phone" placeholder="Customer Phone Number">
+                <button class="btn-submit" onclick="sendBill()">Generate & Send eBill</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data from Flask
+        const inventory = {{ inventory | tojson | safe }};
+        let cart = {}; // { batch_id: quantity }
+
+        function render() {
+            const query = document.getElementById('search').value.toLowerCase();
+            const invList = document.getElementById('inventory-list');
+            invList.innerHTML = '';
+
+            inventory.forEach(item => {
+                if (item.product_name.includes(query)) {
+                    const q = cart[item.batch_id] || 0;
+                    invList.innerHTML += `
+                        <div class="item-card">
+                            <div class="item-details">
+                                <b>${item.product_name}</b>
+                                <span>₹${item.price.toFixed(2)} / ${item.unit}</span>
+                            </div>
+                            <div class="controls">
+                                <button class="btn-qty" onclick="updateQty('${item.batch_id}', -1)">-</button>
+                                <span class="qty-val">${q}</span>
+                                <button class="btn-qty" onclick="updateQty('${item.batch_id}', 1, ${item.quantity})">+</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            updateCartUI();
+        }
+
+        function updateQty(id, delta, max) {
+            let current = cart[id] || 0;
+            let next = current + delta;
+            if (next < 0) next = 0;
+            if (max !== undefined && next > max) { alert("Stock limit reached"); return; }
+            
+            if (next === 0) delete cart[id];
+            else cart[id] = next;
+            
+            render();
+        }
+
+        function updateCartUI() {
+            const cartList = document.getElementById('cart-items');
+            let total = 0;
+            let hasItems = false;
+            cartList.innerHTML = '';
+
+            for (const id in cart) {
+                const item = inventory.find(i => i.batch_id === id);
+                const lineTotal = item.price * cart[id];
+                total += lineTotal;
+                hasItems = true;
+                cartList.innerHTML += `
+                    <div class="cart-row">
+                        <span>${item.product_name} x ${cart[id]}</span>
+                        <b>₹${lineTotal.toFixed(2)}</b>
+                    </div>
+                `;
+            }
+
+            if (!hasItems) cartList.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
+            document.getElementById('grand-total').innerText = `₹${total.toFixed(2)}`;
+        }
+
+        async function sendBill() {
+            const phone = document.getElementById('customer-phone').value.trim();
+            const items = Object.entries(cart).map(([id, q]) => ({ batch_id: id, quantity: q }));
+
+            if (!phone || items.length === 0) {
+                alert("Please add items and enter a customer phone number.");
+                return;
+            }
+
+            const response = await fetch('/api/send_ebill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ buyer_phone: phone, cart: items })
+            });
+
+            if ((await response.json()).status === 'success') {
+                alert("Bill sent successfully! Sync complete.");
+                window.location.reload();
+            } else {
+                alert("Error sending bill. Ensure the vendor is logged in.");
+            }
+        }
+
+        // Initialize
+        render();
+    </script>
+</body>
+</html>

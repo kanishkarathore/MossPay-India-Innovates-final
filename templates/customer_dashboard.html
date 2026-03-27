@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MossPay | Consumer Wallet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #F8FAFC; --sidebar-bg: #FFFFFF; --card-bg: #FFFFFF; --text-main: #1E293B; --text-muted: #64748B; --primary-green: #29683B; --accent-green: #22C55E; --border-color: #E2E8F0; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding-bottom: 100px; }
+        
+        .top-navbar { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 16px 24px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 16px; }
+        .hamburger { font-size: 24px; cursor: pointer; background: none; border: none; color: var(--text-main); padding: 0; }
+        .brand-logo { font-size: 20px; font-weight: 700; color: var(--primary-green); }
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; position: fixed; top: 0; left: -260px; height: 100vh; transition: 0.3s; z-index: 1000; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 24px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
+        .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+        .nav-link { padding: 12px 24px; color: var(--text-muted); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { background-color: #F1F5F9; color: var(--primary-green); border-right: 3px solid var(--primary-green); }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); backdrop-filter: blur(2px); z-index: 999; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .overlay.active { opacity: 1; visibility: visible; }
+        
+        .main-content { padding: 32px 24px; max-width: 800px; margin: 0 auto; }
+        .header { margin-bottom: 24px; }
+        .header h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+        .header p { margin: 4px 0 0 0; color: var(--text-muted); font-size: 15px; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px; }
+        @media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr; } }
+        
+        .stat-card { background: var(--card-bg); padding: 24px; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.02); position: relative; overflow: hidden; }
+        .wallet-card { background: linear-gradient(135deg, #164e63, #065f46); color: white; border: none; box-shadow: 0 20px 25px -5px rgba(6, 95, 70, 0.3); }
+        .wallet-card .stat-title { color: #d1fae5; }
+        .wallet-card .stat-value { color: #ffffff; }
+        
+        .stat-title { color: var(--text-muted); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .stat-value { font-size: 32px; font-weight: 800; color: var(--text-main); }
+
+        .gamification-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px; }
+        .game-widget { background: #F8FAFC; border: 2px dashed var(--border-color); border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 16px; transition: 0.2s; }
+        .game-widget:hover { border-color: var(--primary-green); background: #F0FDF4; }
+        .game-icon { font-size: 32px; background: white; width: 60px; height: 60px; border-radius: 16px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .game-text h4 { margin: 0; font-size: 18px; font-weight: 700; color: var(--text-main); }
+        .game-text p { margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted); font-weight: 500; text-transform: capitalize; }
+
+        .sprout-widget { grid-column: 1 / -1; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 24px; display: flex; flex-direction: column; align-items: center; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+        .sprout-emoji { font-size: 64px; margin-bottom: 12px; filter: drop-shadow(0 10px 15px rgba(34, 197, 94, 0.3)); }
+        .sprout-title { font-size: 18px; font-weight: 700; margin: 0 0 4px 0; }
+        .sprout-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+        .progress-bar-bg { width: 100%; max-width: 300px; height: 10px; background: #E2E8F0; border-radius: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--accent-green); width: {{ progress_pct }}%; border-radius: 10px; transition: width 1s ease-in-out; }
+
+        .utility-section { margin-bottom: 40px; background: var(--card-bg); padding: 24px; border-radius: 20px; border: 1px solid var(--border-color); }
+        .utility-section h3 { font-size: 16px; font-weight: 700; margin: 0 0 20px 0; }
+        .icon-grid { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 10px; }
+        .icon-item { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 70px; cursor: pointer; }
+        .icon-circle { width: 56px; height: 56px; border-radius: 16px; background: #F8FAFC; display: flex; justify-content: center; align-items: center; font-size: 24px; transition: 0.2s; border: 1px solid var(--border-color); }
+        .icon-item:hover .icon-circle { background: var(--primary-green); color: white; transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(41, 104, 59, 0.2); }
+        .icon-label { font-size: 12px; font-weight: 600; color: var(--text-main); text-align: center; }
+
+        .fab-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100; width: 90%; max-width: 400px; }
+        .fab { width: 100%; background: var(--primary-green); color: white; border: none; padding: 18px; border-radius: 50px; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; box-shadow: 0 20px 25px -5px rgba(41, 104, 59, 0.4); transition: 0.2s; }
+        .fab:hover { background: #1f4f2c; transform: translateY(-3px); box-shadow: 0 25px 30px -5px rgba(41, 104, 59, 0.5); }
+
+        /* Utility Modal Styles */
+        #utilityModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-card { background: white; padding: 32px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .modal-header h2 { margin: 0; font-size: 20px; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-muted); }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+        .input-group input { width: 100%; padding: 14px; border: 1px solid var(--border-color); border-radius: 12px; font-size: 16px; font-family: 'Inter'; box-sizing: border-box; }
+        .input-group input:focus { outline: none; border-color: var(--primary-green); }
+        .coin-box { background: #ECFDF5; border: 1px solid #A7F3D0; padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .coin-box strong { color: #065F46; }
+        .btn-full { width: 100%; padding: 16px; background: var(--primary-green); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+    <header class="top-navbar">
+        <div class="nav-left">
+            <button class="hamburger" onclick="toggleSidebar()">☰</button>
+            <div class="brand-logo">🌿 MossPay</div>
+        </div>
+        <a href="/customer/login" style="text-decoration: none; color: var(--text-muted); font-size: 14px; font-weight: 600;">Log Out</a>
+    </header>
+
+    <div class="overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<aside class="sidebar" id="appSidebar">
+        <div class="sidebar-header"><div class="brand-logo">MossPay</div><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
+        <a href="/customer/dashboard" class="nav-link">My Wallet</a>
+        <a href="/customer/discover" class="nav-link">Discover Vendors</a>
+        <a href="/customer/bills" class="nav-link">Your Bills</a>
+        <a href="/customer/journey" class="nav-link">Product Journey</a>
+        <a href="/customer/transactions" class="nav-link">Transaction History</a>
+        <a href="/customer/redeem" class="nav-link">Redeem MossCoins</a>
+        <a href="/customer/leaderboard" class="nav-link">Leaderboards</a>
+        <a href="/customer/referral" class="nav-link">Refer & Earn</a>
+        <a href="#" class="nav-link">Settings</a>
+    </aside>
+
+    <main class="main-content">
+        <div class="header">
+            <h1>Hi, {{ full_name }}! 👋</h1>
+            <p>Here is your green impact summary.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card wallet-card">
+                <div class="stat-title">🪙 MossCoin Balance</div>
+                <div class="stat-value" id="userMossCoins">{{ mosscoins }}</div>
+                <div style="font-size: 12px; margin-top: 8px; color: #a7f3d0;">≈ ₹{{ mosscoins }}.00 discount available</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-title">🌍 Total CO2 Saved</div>
+                <div class="stat-value" style="color: var(--accent-green);">{{ co2_saved }} <span style="font-size: 16px; color: var(--text-muted);">kg</span></div>
+                <div style="font-size: 12px; margin-top: 8px; color: var(--text-muted); font-weight: 500;">Every bit helps the planet</div>
+            </div>
+        </div>
+
+        <div class="gamification-grid">
+            <div class="game-widget">
+                <div class="game-icon">🔥</div>
+                <div class="game-text">
+                    <h4>{{ eco_streak }} Days</h4>
+                    <p>Eco-Streak</p>
+                </div>
+            </div>
+
+            <div class="game-widget">
+                <div class="game-icon">🏆</div>
+                <div class="game-text">
+                    <h4>Rank #{{ city_rank }}</h4>
+                    <p>In {{ location_name }}</p>
+                </div>
+            </div>
+
+            <div class="sprout-widget">
+                <div class="sprout-emoji">{{ sprout_emoji }}</div>
+                <h3 class="sprout-title">{{ sprout_title }}</h3>
+                
+                {% if sprout_remaining > 0 %}
+                    <p class="sprout-sub">Save {{ sprout_remaining }} kg more CO2 to level up!</p>
+                {% else %}
+                    <p class="sprout-sub">You have reached the maximum level. Incredible work!</p>
+                {% endif %}
+                
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width: {{ progress_pct }}%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="utility-section">
+            <h3>Pay Bills with MossCoins</h3>
+            <div class="icon-grid">
+                <div class="icon-item" onclick="openUtilityModal('Mobile Recharge', '📱')"><div class="icon-circle">📱</div><div class="icon-label">Mobile</div></div>
+                <div class="icon-item" onclick="openUtilityModal('Electricity Bill', '💡')"><div class="icon-circle">💡</div><div class="icon-label">Electricity</div></div>
+                <div class="icon-item" onclick="openUtilityModal('Water Bill', '💧')"><div class="icon-circle">💧</div><div class="icon-label">Water</div></div>
+                <div class="icon-item" onclick="openUtilityModal('Gas Cylinder', '🔥')"><div class="icon-circle">🔥</div><div class="icon-label">Gas</div></div>
+                <div class="icon-item" onclick="openUtilityModal('Broadband Bill', '🛜')"><div class="icon-circle">🛜</div><div class="icon-label">Wi-Fi</div></div>
+            </div>
+        </div>
+    </main>
+
+    <div class="fab-container">
+        <button class="fab" onclick="window.location.href='/customer/scan'">
+            <span style="font-size: 22px;">📷</span> Scan QR & Pay
+        </button>
+    </div>
+
+    <div id="utilityModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="modalUtilityTitle">Pay Bill</h2>
+                <button class="modal-close" onclick="closeUtilityModal()">✕</button>
+            </div>
+            <form onsubmit="processUtilityPayment(event)">
+                <div class="input-group">
+                    <label>Account / Consumer Number</label>
+                    <input type="text" placeholder="Enter ID" required>
+                </div>
+                <div class="input-group">
+                    <label>Bill Amount (₹)</label>
+                    <input type="number" id="utilBillAmount" placeholder="e.g. 500" required oninput="calculateUtilityDiscount()">
+                </div>
+                
+                <div class="coin-box">
+                    <div>
+                        <strong style="display:block; margin-bottom:4px;">Apply MossCoins</strong>
+                        <span style="font-size:12px; color: #047857;">Max 10% of bill</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-weight: 700; color: #065F46;" id="utilCoinsToUse">0</span> Coins<br>
+                        <span style="font-size:12px; color: #047857;">(-₹<span id="utilDiscountAmount">0</span>)</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-full" id="utilPayBtn">Pay ₹0.00</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('appSidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        // Utility Modal Logic
+        let currentUtilityService = "";
+        let coinsToDeduct = 0;
+
+        function openUtilityModal(serviceName, icon) {
+            currentUtilityService = serviceName;
+            document.getElementById('modalUtilityTitle').innerText = `${icon} Pay ${serviceName}`;
+            document.getElementById('utilBillAmount').value = '';
+            document.getElementById('utilCoinsToUse').innerText = '0';
+            document.getElementById('utilDiscountAmount').innerText = '0';
+            document.getElementById('utilPayBtn').innerText = 'Enter Amount';
+            document.getElementById('utilityModal').style.display = 'flex';
+        }
+
+        function closeUtilityModal() {
+            document.getElementById('utilityModal').style.display = 'none';
+        }
+
+        function calculateUtilityDiscount() {
+            const billAmount = parseFloat(document.getElementById('utilBillAmount').value) || 0;
+            const userCoins = parseInt(document.getElementById('userMossCoins').innerText) || 0;
+            
+            // Rules: 1 Coin = 1 Rupee. Max discount is 10% of the bill, or all their coins, whichever is lower.
+            const maxDiscountAllowed = Math.floor(billAmount * 0.10);
+            coinsToDeduct = Math.min(userCoins, maxDiscountAllowed);
+            
+            const finalAmount = billAmount - coinsToDeduct;
+
+            document.getElementById('utilCoinsToUse').innerText = coinsToDeduct;
+            document.getElementById('utilDiscountAmount').innerText = coinsToDeduct;
+
+            if(billAmount > 0) {
+                document.getElementById('utilPayBtn').innerText = `Pay ₹${finalAmount.toFixed(2)}`;
+            } else {
+                document.getElementById('utilPayBtn').innerText = 'Enter Amount';
+            }
+        }
+
+        async function processUtilityPayment(event) {
+            event.preventDefault();
+            const billAmount = parseFloat(document.getElementById('utilBillAmount').value);
+            
+            const payload = {
+                service: currentUtilityService,
+                amount: billAmount,
+                coins_used: coinsToDeduct
+            };
+
+            document.getElementById('utilPayBtn').innerText = "Processing...";
+
+            try {
+                const response = await fetch('/api/pay_utility', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                const data = await response.json();
+                
+                if(data.status === 'success') {
+                    alert(data.message);
+                    window.location.reload(); // Reload to update MossCoin balance!
+                } else {
+                    alert(data.message);
+                    document.getElementById('utilPayBtn').innerText = "Try Again";
+                }
+            } catch (error) { 
+                alert("Payment failed."); 
+            }
+        }
+    </script>
+</body>
+</html>

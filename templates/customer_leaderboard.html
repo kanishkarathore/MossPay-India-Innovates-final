@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MossPay | City Leaderboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #F8FAFC; --sidebar-bg: #FFFFFF; --card-bg: #FFFFFF; --text-main: #1E293B; --text-muted: #64748B; --primary-green: #29683B; --border-color: #E2E8F0; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); }
+        
+        .top-navbar { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 16px 24px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 16px; }
+        .back-btn { font-size: 14px; cursor: pointer; background: none; border: none; color: var(--text-muted); font-weight: 600; padding: 0; display: flex; align-items: center; }
+        .hamburger { font-size: 24px; cursor: pointer; background: none; border: none; color: var(--text-main); padding: 0; }
+        .brand-logo { font-size: 20px; font-weight: 700; color: var(--primary-green); }
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; position: fixed; top: 0; left: -260px; height: 100vh; transition: 0.3s; z-index: 1000; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 24px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
+        .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+        .nav-link { padding: 12px 24px; color: var(--text-muted); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { background-color: #F1F5F9; color: var(--primary-green); border-right: 3px solid var(--primary-green); }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); backdrop-filter: blur(2px); z-index: 999; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .overlay.active { opacity: 1; visibility: visible; }
+        
+        .main-content { padding: 32px 24px; max-width: 600px; margin: 0 auto; }
+        
+        .header-banner { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 32px; border-radius: 20px; text-align: center; margin-bottom: 32px; position: relative; overflow: hidden; }
+        .header-banner h1 { margin: 0 0 8px 0; font-size: 24px; z-index: 1; position: relative; }
+        .header-banner p { margin: 0; color: #94a3b8; font-size: 15px; z-index: 1; position: relative; }
+        .header-banner::after { content: '🏆'; position: absolute; right: -10px; bottom: -20px; font-size: 100px; opacity: 0.1; }
+
+        .leaderboard-list { background: var(--card-bg); border-radius: 20px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); overflow: hidden; }
+        
+        .rank-item { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--border-color); }
+        .rank-item:last-child { border-bottom: none; }
+        
+        .rank-left { display: flex; align-items: center; gap: 16px; }
+        
+        .rank-number { width: 36px; height: 36px; border-radius: 50%; background: #F1F5F9; display: flex; justify-content: center; align-items: center; font-weight: 700; color: var(--text-muted); font-size: 14px; }
+        
+        /* Top 3 Styling */
+        .rank-item.rank-1 { background: #FFFBEB; }
+        .rank-item.rank-1 .rank-number { background: #FBBF24; color: white; font-size: 18px; box-shadow: 0 4px 6px rgba(251, 191, 36, 0.3); }
+        
+        .rank-item.rank-2 { background: #F8FAFC; }
+        .rank-item.rank-2 .rank-number { background: #94A3B8; color: white; font-size: 16px; box-shadow: 0 4px 6px rgba(148, 163, 184, 0.3); }
+        
+        .rank-item.rank-3 { background: #FEF2F2; }
+        .rank-item.rank-3 .rank-number { background: #B45309; color: white; font-size: 16px; box-shadow: 0 4px 6px rgba(180, 83, 9, 0.3); }
+        
+        /* Highlight current user */
+        .rank-item.current-user { border-left: 4px solid var(--primary-green); background: #F0FDF4; }
+
+        .user-name { font-weight: 600; font-size: 15px; color: var(--text-main); margin: 0; }
+        .co2-amount { font-weight: 700; color: #10B981; font-size: 15px; }
+        .co2-amount span { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+        
+        .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+    <header class="top-navbar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="window.history.back()">← Back</button>
+            <button class="hamburger" onclick="toggleSidebar()">☰</button>
+            <div class="brand-logo">🌿 MossPay</div>
+        </div>
+        <a href="/customer/login" style="text-decoration: none; color: var(--text-muted); font-size: 14px; font-weight: 600;">Log Out</a>
+    </header>
+
+    <div class="overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<aside class="sidebar" id="appSidebar">
+        <div class="sidebar-header"><div class="brand-logo">MossPay</div><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
+        <a href="/customer/dashboard" class="nav-link">My Wallet</a>
+        <a href="/customer/discover" class="nav-link">Discover Vendors</a>
+        <a href="/customer/bills" class="nav-link">Your Bills</a>
+        <a href="/customer/journey" class="nav-link">Product Journey</a>
+        <a href="/customer/transactions" class="nav-link">Transaction History</a>
+        <a href="/customer/redeem" class="nav-link">Redeem MossCoins</a>
+        <a href="/customer/leaderboard" class="nav-link">Leaderboards</a>
+        <a href="/customer/referral" class="nav-link">Refer & Earn</a>
+        <a href="#" class="nav-link">Settings</a>
+    </aside>
+
+    <main class="main-content">
+        
+        <div class="header-banner">
+            <h1>{{ city }} Eco-Warriors</h1>
+            <p>Top citizens saving the most CO2 in your city.</p>
+        </div>
+
+        <div class="leaderboard-list">
+            {% for leader in leaders %}
+                <div class="rank-item 
+                    {% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}
+                    {% if leader.customer_id == current_user_id %}current-user{% endif %}
+                ">
+                    <div class="rank-left">
+                        <div class="rank-number">
+                            {% if loop.index == 1 %}🥇
+                            {% elif loop.index == 2 %}🥈
+                            {% elif loop.index == 3 %}🥉
+                            {% else %}{{ loop.index }}
+                            {% endif %}
+                        </div>
+                        <p class="user-name">
+                            {{ leader.full_name }}
+                            {% if leader.customer_id == current_user_id %} <span style="color: var(--primary-green); font-size: 12px;">(You)</span>{% endif %}
+                        </p>
+                    </div>
+                    <div class="co2-amount">
+                        {{ leader.total_co2_saved | round(2) }} <span>kg saved</span>
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <h3>No one is on the leaderboard yet.</h3>
+                    <p>Make a green purchase to claim the #1 spot in {{ city }}!</p>
+                </div>
+            {% endfor %}
+        </div>
+
+    </main>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('appSidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

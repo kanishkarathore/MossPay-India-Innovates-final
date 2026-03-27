@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MossPay | Welcome</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --primary-green: #29683B; /* The signature dark green */
+            --primary-hover: #1f4f2c;
+            --secondary-bg: #F1F5F9;
+            --secondary-hover: #E2E8F0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-main);
+        }
+
+        /* The Premium Central Card */
+        .landing-card {
+            width: 100%;
+            max-width: 400px;
+            background: var(--card-bg);
+            padding: 48px 32px;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            text-align: center;
+            box-sizing: border-box;
+            margin: 20px;
+        }
+
+        .logo {
+            width: 80px; 
+            margin-bottom: 16px;
+        }
+
+        /* NEW: Styled text for MossPay */
+        .brand-name {
+            font-size: 32px;
+            font-weight: 800; /* Extra bold */
+            color: var(--text-main);
+            margin: 0 0 12px 0;
+            letter-spacing: -1px; /* Tight kerning for that tech startup look */
+        }
+
+        .subtitle {
+            font-size: 15px;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        /* Smooth SaaS Buttons */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Customer Button - Light and Subtle */
+        .btn-customer {
+            background-color: var(--secondary-bg);
+            color: var(--text-main);
+            margin-bottom: 16px;
+        }
+
+        .btn-customer:hover {
+            background-color: var(--secondary-hover);
+        }
+
+        /* Vendor Button - The Main Call to Action */
+        .btn-vendor {
+            background-color: var(--primary-green);
+            color: #FFFFFF;
+            box-shadow: 0 4px 6px -1px rgba(41, 104, 59, 0.2);
+        }
+
+        .btn-vendor:hover {
+            background-color: var(--primary-hover);
+            box-shadow: 0 6px 8px -1px rgba(41, 104, 59, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* A little eco-friendly touch at the bottom */
+        .footer-text {
+            margin-top: 32px;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="landing-card">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MossPay Logo" class="logo">
+        
+        <h1 class="brand-name">MossPay</h1>
+        
+        <p class="subtitle">A micro carbon wallet for seamless<br>green purchases & supply chain tracking.</p>
+
+        <a href="/customer" class="btn btn-customer">Continue as Customer</a>
+        <a href="/vendor/login" class="btn btn-vendor">Continue as Merchant</a>
+        
+        <div class="footer-text">
+            <span>Secured by</span> <strong>MossPay AI</strong> 🌿
+        </div>
+    </div>
+
+</body>
+</html>
