@@ -1,7 +1,9 @@
 import sqlite3
 import uuid
+import os
 
-DB_NAME = "mosspay.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_NAME = os.path.join(BASE_DIR, "mosspay.db")
 
 def init_db():
     with sqlite3.connect(DB_NAME) as conn:
